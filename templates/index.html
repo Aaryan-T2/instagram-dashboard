@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Dashboard - Taffy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; margin-bottom: 40px; }
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #e91e63, #9c27b0, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline;
+        }
+        .subtitle { color: #888; margin-top: 10px; }
+        .live-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+            vertical-align: middle;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .overview { margin-bottom: 40px; }
+        .overview h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .overview-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .overview-card:hover { transform: translateY(-5px); }
+        .overview-card .label { display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 10px; }
+        .overview-card .value { display: block; font-size: 2rem; font-weight: bold; }
+        .overview-card .timer { color: #4caf50; font-family: monospace; }
+        .channels { margin-bottom: 40px; }
+        .channels h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        .channel-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .channel-card:hover { transform: translateY(-5px); border-color: rgba(233, 30, 99, 0.5); }
+        .channel-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .channel-icon { font-size: 2rem; }
+        .channel-header h3 { font-size: 1.2rem; }
+        .channel-alias { color: #888; font-size: 0.85rem; margin-left: auto; }
+        .channel-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-label { display: block; color: #aaa; font-size: 0.75rem; margin-bottom: 5px; }
+        .stat-value { display: block; font-size: 1.3rem; font-weight: bold; color: #e91e63; }
+        .channel-latest, .channel-folder { font-size: 0.9rem; color: #aaa; margin-top: 10px; }
+        .channel-latest .value, .channel-folder .value { color: #fff; }
+        .channel-folder a { color: #2196f3; text-decoration: none; }
+        .channel-folder a:hover { text-decoration: underline; }
+        .drive-count {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .channel-subfolders {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        .schedule { margin-bottom: 40px; }
+        .schedule h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .schedule-info {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .schedule-info p { margin-bottom: 10px; color: #ccc; }
+        .schedule-info strong { color: #e91e63; }
+        .refresh-btn {
+            background: linear-gradient(90deg, #e91e63, #9c27b0);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .refresh-btn:hover { transform: scale(1.05); }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+        footer strong { color: #e91e63; }
+        .update-time { font-size: 0.85rem; margin-top: 10px; }
+        .loading { text-align: center; padding: 40px; color: #888; }
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8rem; }
+            .channel-grid { grid-template-columns: 1fr; }
+            .overview-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Instagram Dashboard <span class="live-badge">LIVE</span></h1>
+            <p class="subtitle">Managed by Taffy - Auto-updating every 5 minutes</p>
+        </header>
+
+        <div id="content" class="loading">Loading live data...</div>
+
+        <footer>
+            <p>Managed by <strong>Taffy</strong> - Instagram DM Monitor & Auto Poster</p>
+            <p class="update-time">Last updated: <span id="last-update">--</span></p>
+        </footer>
+    </div>
+
+    <script>
+        let dashboardData = null;
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/data');
+                if (!res.ok) throw new Error('Failed to fetch');
+                dashboardData = await res.json();
+                render();
+            } catch (e) {
+                console.error('Error:', e);
+                document.getElementById('content').innerHTML = 
+                    '<div class="loading">Error loading data. <button class="refresh-btn" onclick="fetchData()">Retry</button></div>';
+            }
+        }
+
+        async function forceRefresh() {
+            const btn = document.querySelector('.refresh-btn');
+            if (btn) btn.disabled = true;
+            try {
+                await fetch('/api/refresh', { method: 'POST' });
+                await fetchData();
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function render() {
+            if (!dashboardData || !dashboardData.accounts) return;
+
+            const accounts = dashboardData.accounts;
+            const accountList = Object.values(accounts);
+
+            const totalFollowers = accountList.reduce((s, a) => s + (a.followers || 0), 0);
+            const totalDrive = accountList.reduce((s, a) => s + (a.driveVideos || 0), 0);
+            const todayPosts = (dashboardData.postingLog || []).filter(p => {
+                const d = new Date(p.timestamp);
+                const now = new Date();
+                return d.toDateString() === now.toDateString();
+            }).length;
+
+            let html = `
+                <section class="overview">
+                    <h2>Overview</h2>
+                    <div class="overview-cards">
+                        <div class="overview-card">
+                            <span class="label">Total Followers</span>
+                            <span class="value">${totalFollowers > 0 ? formatNum(totalFollowers) : '<100'}</span>
+                        </div>
+                        <div class="overview-card">
+                            <span class="label">Videos Posted Today</span>
+                            <span class="value">${todayPosts}</span>
+                        </div>
+                        <div class="overview-card">
+                            <span class="label">Next Video In</span>
+                            <span class="value timer" id="next-video-timer">--:--:--</span>
+                        </div>
+                        <div class="overview-card">
+                            <span class="label">Videos in Drive</span>
+                            <span class="value">${formatNum(totalDrive)}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="channels">
+                    <h2>Channels</h2>
+                    <div class="channel-grid">
+                        ${accountList.map(a => `
+                            <div class="channel-card">
+                                <div class="channel-header">
+                                    <span class="channel-icon">${a.icon}</span>
+                                    <h3>@${a.username}</h3>
+                                    <span class="channel-alias">${a.alias}</span>
+                                </div>
+                                <div class="channel-stats">
+                                    <div class="stat">
+                                        <span class="stat-label">Followers</span>
+                                        <span class="stat-value">${a.followers > 0 ? formatNum(a.followers) : '<100'}</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Reach (24h)</span>
+                                        <span class="stat-value">${a.reach > 0 ? formatNum(a.reach) : '0'}</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Posts</span>
+                                        <span class="stat-value">${a.mediaCount || 0}</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Drive Videos</span>
+                                        <span class="stat-value">${a.driveVideos || 0}</span>
+                                    </div>
+                                </div>
+                                <div class="channel-latest">
+                                    <span class="label">Latest: </span>
+                                    <span class="value">${a.latestPost ? a.latestPost.title : 'No posts yet'}</span>
+                                </div>
+                                <div class="channel-folder">
+                                    <span class="label">📁 </span>
+                                    <a href="https://drive.google.com/drive/folders/${a.driveFolderId}" target="_blank">Google Drive</a>
+                                    <span class="drive-count">${a.driveVideos} videos</span>
+                                </div>
+                                ${a.subfolders ? `<div class="channel-subfolders">📂 ${a.subfolders.map(f => f.name).join(', ')}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="schedule">
+                    <h2>Posting Schedule</h2>
+                    <div class="schedule-info">
+                        <p><strong>Daily Goal:</strong> 6 videos total (2 per channel)</p>
+                        <p><strong>Posting Order:</strong> In sequence from each folder (no repeats)</p>
+                        <p><strong>Workflow:</strong> Download → Transcribe → Generate Caption → Post</p>
+                        <button class="refresh-btn" onclick="forceRefresh()">🔄 Refresh Now</button>
+                    </div>
+                </section>
+            `;
+
+            document.getElementById('content').innerHTML = html;
+            document.getElementById('last-update').textContent = new Date(dashboardData.lastUpdated).toLocaleString();
+            updateCountdown();
+        }
+
+        function formatNum(n) {
+            if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const h = now.getHours();
+            let next;
+            if (h < 9) { next = new Date(now); next.setHours(9,0,0,0); }
+            else if (h < 18) { next = new Date(now); next.setHours(18,0,0,0); }
+            else { next = new Date(now); next.setDate(next.getDate()+1); next.setHours(9,0,0,0); }
+            const diff = next - now;
+            const hh = Math.floor(diff/3600000);
+            const mm = Math.floor((diff%3600000)/60000);
+            const ss = Math.floor((diff%60000)/1000);
+            const el = document.getElementById('next-video-timer');
+            if (el) {
+                el.textContent = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+            }
+        }
+
+        // Initial load
+        fetchData();
+        setInterval(updateCountdown, 1000);
+        setInterval(fetchData, 300000); // Auto-refresh every 5 minutes
+    </script>
+</body>
+</html>
