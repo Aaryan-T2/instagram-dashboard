@@ -6,7 +6,6 @@ from composio import ComposioToolSet
 
 app = Flask(__name__)
 
-# Account configurations
 ACCOUNTS = {
     "dailyhealthai5": {
         "name": "Daily Health ai",
@@ -44,62 +43,31 @@ ACCOUNTS = {
     }
 }
 
-# Cache for data
-cache = {
-    "data": None,
-    "last_fetch": None
-}
-
-CACHE_DURATION = 300  # 5 minutes
+cache = {"data": None, "last_fetch": None}
+CACHE_DURATION = 300
 
 def fetch_live_data():
-    """Fetch live data from Instagram and Google Drive via Composio"""
     try:
         toolset = ComposioToolSet(api_key=os.environ.get("COMPOSIO_API_KEY"))
-        
         accounts_data = {}
-        
         for key, config in ACCOUNTS.items():
             account_info = {
-                "name": config["name"],
-                "username": config["username"],
-                "accountId": config["account_id"],
-                "alias": config["alias"],
-                "icon": config["icon"],
-                "driveFolderId": config["drive_folder_id"],
-                "followers": 0,
-                "reach": 0,
-                "mediaCount": 0,
-                "driveVideos": 0,
-                "latestPost": None,
-                "subfolders": config.get("subfolders")
+                "name": config["name"], "username": config["username"],
+                "accountId": config["account_id"], "alias": config["alias"],
+                "icon": config["icon"], "driveFolderId": config["drive_folder_id"],
+                "followers": 0, "reach": 0, "mediaCount": 0, "driveVideos": 0,
+                "latestPost": None, "subfolders": config.get("subfolders")
             }
-            
-            # Fetch Instagram user info
             try:
-                result = toolset.execute_action(
-                    action="INSTAGRAM_GET_USER_INFO",
-                    params={"ig_user_id": config["account_id"]},
-                    connected_account_id=config["connection_id"]
-                )
+                result = toolset.execute_action(action="INSTAGRAM_GET_USER_INFO", params={"ig_user_id": config["account_id"]}, connected_account_id=config["connection_id"])
                 if result.get("data"):
                     data = result["data"]
                     account_info["followers"] = data.get("followers_count", 0) or 0
                     account_info["mediaCount"] = data.get("media_count", 0) or 0
             except Exception as e:
                 print(f"Error fetching Instagram info for {key}: {e}")
-            
-            # Fetch Instagram insights
             try:
-                result = toolset.execute_action(
-                    action="INSTAGRAM_GET_USER_INSIGHTS",
-                    params={
-                        "ig_user_id": config["account_id"],
-                        "metric": ["reach", "profile_views"],
-                        "period": "day"
-                    },
-                    connected_account_id=config["connection_id"]
-                )
+                result = toolset.execute_action(action="INSTAGRAM_GET_USER_INSIGHTS", params={"ig_user_id": config["account_id"], "metric": ["reach", "profile_views"], "period": "day"}, connected_account_id=config["connection_id"])
                 if result.get("data") and result["data"].get("data"):
                     for metric in result["data"]["data"]:
                         if metric.get("name") == "reach":
@@ -108,52 +76,29 @@ def fetch_live_data():
                                 account_info["reach"] = values[-1].get("value", 0)
             except Exception as e:
                 print(f"Error fetching Instagram insights for {key}: {e}")
-            
-            # Fetch Google Drive videos
             try:
                 query = f"'{config['drive_folder_id']}' in parents and mimeType contains 'video'"
-                result = toolset.execute_action(
-                    action="GOOGLEDRIVE_LIST_FILES",
-                    params={
-                        "q": query,
-                        "fields": "files(id,name)",
-                        "pageSize": 100
-                    }
-                )
+                result = toolset.execute_action(action="GOOGLEDRIVE_LIST_FILES", params={"q": query, "fields": "files(id,name)", "pageSize": 100})
                 if result.get("data") and result["data"].get("files"):
                     account_info["driveVideos"] = len(result["data"]["files"])
             except Exception as e:
                 print(f"Error fetching Google Drive for {key}: {e}")
-            
             accounts_data[key] = account_info
-        
-        return {
-            "lastUpdated": datetime.utcnow().isoformat() + "Z",
-            "accounts": accounts_data,
-            "postingLog": []
-        }
-        
+        return {"lastUpdated": datetime.utcnow().isoformat() + "Z", "accounts": accounts_data, "postingLog": []}
     except Exception as e:
         print(f"Error fetching data: {e}")
         return None
 
 def get_data():
-    """Get data with caching"""
     now = datetime.utcnow()
-    
     if cache["data"] and cache["last_fetch"]:
-        elapsed = (now - cache["last_fetch"]).total_seconds()
-        if elapsed < CACHE_DURATION:
+        if (now - cache["last_fetch"]).total_seconds() < CACHE_DURATION:
             return cache["data"]
-    
-    # Fetch fresh data
     data = fetch_live_data()
     if data:
         cache["data"] = data
         cache["last_fetch"] = now
         return data
-    
-    # Return cached data if fetch fails
     return cache["data"]
 
 @app.route("/")
@@ -169,7 +114,6 @@ def api_data():
 
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
-    """Force refresh data"""
     cache["last_fetch"] = None
     data = get_data()
     if data:
